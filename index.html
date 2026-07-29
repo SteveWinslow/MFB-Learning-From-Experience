@@ -652,7 +652,7 @@ tr.pending td{background:rgba(217,119,6,.05)}
 
 <script>
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
-const BUILD = { version: '6.1.0', date: '2026-07-29', label: 'MFB LFE Issue Tracker' };
+const BUILD = { version: '6.1.1', date: '2026-07-29', label: 'MFB LFE Issue Tracker' };
 console.log(`%c ${BUILD.label} %c v${BUILD.version} · ${BUILD.date} · Supabase `, 'background:#2563EB;color:#fff;font-weight:600;padding:2px 0;border-radius:4px 0 0 4px','background:#1C1B18;color:#fff;padding:2px 0;border-radius:0 4px 4px 0');
 
 const SUPABASE_URL = 'https://quohvserkmzaujftsjgy.supabase.co';
@@ -1069,6 +1069,10 @@ function mapLesson(r){
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// For a value going inside a quoted JS string within an inline handler.
+// esc() alone leaves apostrophes intact, so a category named "Client's
+// Requirements" would close the string early and kill the button.
+const attrJs=s=>esc(String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"));
 const badge=(t,c)=>`<span class="badge bg-${c||'neutral'}">${esc(t)}</span>`;
 const catB=c=>badge(c,CAT_C[c]||'neutral');
 const statB=s=>badge(s,STAT_C[s]||'neutral');
@@ -1414,7 +1418,7 @@ function renderCatAdmin(){
     const inUse=lessons.some(l=>l.Category===c);
     return `<div style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;background:var(--surface2);border:1px solid var(--border);font-size:12px">
       ${esc(c)}
-      ${!inUse?`<button onclick="removeCategory('${esc(c)}')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:0;line-height:1">✕</button>`:''}
+      ${!inUse?`<button onclick="removeCategory('${attrJs(c)}')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:0;line-height:1">✕</button>`:''}
     </div>`;}).join('');
 }
 function addCategory(){
