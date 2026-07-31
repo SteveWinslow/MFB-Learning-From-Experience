@@ -5,7 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MFB · LFE Issue Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Pinned to an exact version with an integrity hash. Unpinned @2 lets
+     jsDelivr change the library under the app without a code change --
+     which matters now the offline queue and session checks depend on it.
+     Same version as MFB Studio. SRI verified against the npm tarball. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.3/dist/umd/supabase.js"
+        integrity="sha384-sihuiVHG7vyEIuePVbLI4QpHu1dbhCZe4Zqp0FuqnFeEnyIhF3koyXoBZyfbFsYs"
+        crossorigin="anonymous"></script>
 <style>
 :root{
   --bg:#F7F6F3;--surface:#FFFFFF;--surface2:#F2F1EE;--border:#E4E2DC;--border2:#D0CEC7;
@@ -652,7 +658,7 @@ tr.pending td{background:rgba(217,119,6,.05)}
 
 <script>
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
-const BUILD = { version: '6.1.1', date: '2026-07-29', label: 'MFB LFE Issue Tracker' };
+const BUILD = { version: '6.2.0', date: '2026-07-29', label: 'MFB LFE Issue Tracker' };
 console.log(`%c ${BUILD.label} %c v${BUILD.version} · ${BUILD.date} · Supabase `, 'background:#2563EB;color:#fff;font-weight:600;padding:2px 0;border-radius:4px 0 0 4px','background:#1C1B18;color:#fff;padding:2px 0;border-radius:0 4px 4px 0');
 
 const SUPABASE_URL = 'https://quohvserkmzaujftsjgy.supabase.co';
@@ -816,7 +822,10 @@ function adoptId(tmp,real,extra){
 // Every queued operation, executed for real. One place that talks to Supabase.
 async function applyOp(op){
   if(op.kind==='lesson.insert'){
-    const row=Object.assign({},op.row,{customer_id:CUSTOMER.id,legacy_id:nextId()});
+    // legacy_id is deliberately not sent. A database trigger assigns it under
+    // an advisory lock, so two people saving at once can't land on the same
+    // reference. The real number comes back in the select below.
+    const row=Object.assign({},op.row,{customer_id:CUSTOMER.id});
     const { data, error } = await sb.from('lessons').insert(row).select('id,legacy_id').single();
     if(error) throw new Error(error.message);
     return { id:data.id, legacy_id:data.legacy_id };
@@ -1078,7 +1087,9 @@ const catB=c=>badge(c,CAT_C[c]||'neutral');
 const statB=s=>badge(s,STAT_C[s]||'neutral');
 const prioB=p=>badge(p,PRIO_C[p]||'neutral');
 const nn=v=>{const s=String(v==null?'':v).trim();return s===''?null:s;};
-function nextId(){ const ids=lessons.map(l=>parseInt(l.ID)||0); return ids.length?String(Math.max(...ids)+1):'1'; }
+// Reference numbers are assigned server-side by the trg_lessons_legacy_id
+// trigger. Computing them here caused collisions when two people saved
+// simultaneously, so this is no longer used for inserts.
 function projByName(n){ return projects.find(p=>p.name===n)||null; }
 function fmtDT(iso){
   if(!iso)return'';
