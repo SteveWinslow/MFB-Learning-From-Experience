@@ -356,10 +356,10 @@ tr.pending td{background:rgba(217,119,6,.05)}
           </select>
           <span class="tlabel">Sort</span>
           <select class="sel" id="f-sort" onchange="applySort()">
-            <option value="ID-1">Ref ↑ (oldest)</option>
-            <option value="ID--1">Ref ↓ (newest)</option>
-            <option value="DateLogged--1">Date added ↓ (newest first)</option>
-            <option value="DateLogged-1">Date added ↑ (oldest first)</option>
+            <option value="ID--1">Newest first (default)</option>
+            <option value="ID-1">Oldest first</option>
+            <option value="DateLogged--1">Date logged ↓ (newest)</option>
+            <option value="DateLogged-1">Date logged ↑ (oldest)</option>
             <option value="Priority-1">Priority</option>
             <option value="Status-1">Status</option>
           </select>
@@ -658,7 +658,7 @@ tr.pending td{background:rgba(217,119,6,.05)}
 
 <script>
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
-const BUILD = { version: '6.2.0', date: '2026-07-29', label: 'MFB LFE Issue Tracker' };
+const BUILD = { version: '6.2.1', date: '2026-07-29', label: 'MFB LFE Issue Tracker' };
 console.log(`%c ${BUILD.label} %c v${BUILD.version} · ${BUILD.date} · Supabase `, 'background:#2563EB;color:#fff;font-weight:600;padding:2px 0;border-radius:4px 0 0 4px','background:#1C1B18;color:#fff;padding:2px 0;border-radius:0 4px 4px 0');
 
 const SUPABASE_URL = 'https://quohvserkmzaujftsjgy.supabase.co';
@@ -681,7 +681,11 @@ let AUTH_USER = null;
 let MEMBERSHIP = null;
 let CATS = [];
 let lessons = [], projects = [];
-let sortCol = 'ID', sortDir = 1;
+// Newest first by default. Reference numbers are assigned in insertion
+// order, so this puts a lesson you have just logged at the top instead of
+// at the bottom of 200-odd rows. It also beats sorting by date_logged,
+// which is blank on 30 of the older records.
+let sortCol = 'ID', sortDir = -1;
 let lastLoaded = null;
 
 // ─── UI STATUS ────────────────────────────────────────────────────────────────
@@ -1016,7 +1020,8 @@ async function enterApp(){
   // Identity is settled, so the queue for this workspace + login can be picked
   // back up — including anything left behind by a closed tab.
   purgeForeignQueues();
-  restoreQueue();
+  syncSortHeaders();
+restoreQueue();
   renderNetBanner();
   await load();
   bootFinish();
@@ -1115,17 +1120,28 @@ function fillCatSel(id){
 }
 
 // ─── SORT / FILTER ────────────────────────────────────────────────────────────
+const SORT_LABELS={ID:'Ref',Project:'Project',Category:'Category',Status:'Status',Priority:'Priority'};
+// Repaint every sortable header from the current state, so the arrows agree
+// with the Sort dropdown no matter which one was used to change it.
+function syncSortHeaders(){
+  Object.keys(SORT_LABELS).forEach(col=>{
+    const th=document.getElementById('th-'+col);
+    if(!th)return;
+    const active=(col===sortCol);
+    th.classList.toggle('sorted',active);
+    th.textContent=SORT_LABELS[col]+(active?(sortDir===1?' ↑':' ↓'):' ↕');
+  });
+}
 function sortBy(col){
-  if(sortCol===col)sortDir*=-1; else{sortCol=col;sortDir=1;}
-  document.querySelectorAll('thead th').forEach(t=>t.classList.remove('sorted'));
-  const th=document.getElementById('th-'+col);
-  if(th){th.classList.add('sorted');th.textContent=(col==='ID'?'Ref':col)+(sortDir===1?' ↑':' ↓');}
+  if(sortCol===col)sortDir*=-1; else{sortCol=col;sortDir=(col==='ID')?-1:1;}
+  syncSortHeaders();
   renderLog();
 }
 function applySort(){
-  const val=(document.getElementById('f-sort')||{value:'ID-1'}).value;
+  const val=(document.getElementById('f-sort')||{value:'ID--1'}).value;
   const parts=val.match(/^(.+)-(-?1)$/);
   if(parts){sortCol=parts[1];sortDir=parseInt(parts[2]);}
+  syncSortHeaders();
   renderLog();
 }
 function filtered(){
