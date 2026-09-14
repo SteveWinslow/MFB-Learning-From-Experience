@@ -650,7 +650,10 @@ tr.pending td{background:var(--amber-wash)}
 </div>
 
 <!-- LESSON MODAL -->
-<div class="modal-overlay" id="lesson-modal" onclick="if(event.target===this)closeLessonModal()">
+<!-- No click-outside-to-close on the two editing modals. A stray click on
+     the backdrop used to bin everything typed in, so these only close from
+     Cancel, Save or the X. The read-only detail panel keeps it. -->
+<div class="modal-overlay" id="lesson-modal">
   <div class="modal">
     <div class="modal-head">
       <h3 id="lm-title">Add Lesson</h3>
@@ -690,7 +693,7 @@ tr.pending td{background:var(--amber-wash)}
 </div>
 
 <!-- PROJECT MODAL -->
-<div class="modal-overlay" id="proj-modal" onclick="if(event.target===this)closeProjectModal()">
+<div class="modal-overlay" id="proj-modal">
   <div class="modal" style="width:min(96vw,420px)">
     <div class="modal-head">
       <h3 id="pm-title">Add Project</h3>
@@ -716,7 +719,7 @@ tr.pending td{background:var(--amber-wash)}
 
 <script>
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
-const BUILD = { version: '6.3.0', date: '2026-09-10', label: 'MFB LFE Issue Tracker' };
+const BUILD = { version: '6.3.1', date: '2026-09-14', label: 'MFB LFE Issue Tracker' };
 console.log(`%c ${BUILD.label} %c v${BUILD.version} · ${BUILD.date} · Supabase `, 'background:#04836F;color:#fff;font-weight:600;padding:2px 0;border-radius:4px 0 0 4px','background:#15211E;color:#fff;padding:2px 0;border-radius:0 4px 4px 0');
 
 const SUPABASE_URL = 'https://quohvserkmzaujftsjgy.supabase.co';
@@ -1802,7 +1805,8 @@ function renderAll(){
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeLessonModal();closeProjectModal();closeDetail();}});
+// Escape closes the detail panel only, for the same reason.
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDetail();});
 document.getElementById('auth-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doSignIn();});
 document.getElementById('auth-email').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('auth-pass').focus();});
 document.querySelector('.who a').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();doSignOut();}});
